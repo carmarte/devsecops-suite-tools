@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const modeToggle = document.getElementById("modeToggle");
+        const userPref = localStorage.getItem("theme");
+        if (userPref) document.body.classList.toggle("dark-mode", userPref === "dark");
+
+        modeToggle.addEventListener("click", () => {
+            document.body.classList.toggle("dark-mode");
+            const isDark = document.body.classList.contains("dark-mode");
+            localStorage.setItem("theme", isDark ? "dark" : "light");
+        });
+    });
+    </script>
+    <style>
+        :root {
+            --bg-color-light: #f4f4f4;
+            --text-color-light: #333;
+            --bg-color-dark: #1e1e1e;
+            --text-color-dark: #e0e0e0;
+            --table-bg-dark: #2a2a2a;
+        }
+        body {
+            background-color: var(--bg-color-light);
+            color: var(--text-color-light);
+        }
+        body.dark-mode {
+            background-color: var(--bg-color-dark);
+            color: var(--text-color-dark);
+        }
+        body.dark-mode table.dataTable {
+            background-color: var(--table-bg-dark);
+            color: var(--text-color-dark);
+        }
+        body.dark-mode table.dataTable thead th {
+            color: #fff;
+        }
+        .theme-toggle {
+            float: right;
+            margin-bottom: 10px;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+        }
+    </style>
+    <meta charset="UTF-8">
+    <title>Syft SBOM Report</title>
+    <meta name="author" content="syft">
+    <meta name="version" content="1.0.0">
+
+    <!-- CSS y JS de DataTables -->
+    <link href="https://cdn.datatables.net/v/dt/jq-3.7.0/jszip-3.10.1/dt-2.3.0/b-3.2.3/b-html5-3.2.3/r-3.0.4/datatables.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/v/dt/jq-3.7.0/jszip-3.10.1/dt-2.3.0/b-3.2.3/b-html5-3.2.3/r-3.0.4/datatables.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color, #f4f4f4);
+            color: var(--text-color, #333);
+        }
+        h1 {
+            text-align: center;
+        }
+        .main-container {
+            max-width: 1200px;
+            margin: auto;
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        table.dataTable {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+<div class="main-container">
+    <button id="modeToggle" class="theme-toggle">🌗 Cambiar Modo</button>
+    <h1>Syft - Software Bill of Materials Report</h1>
+    <table id="sbomTable" class="display">
+        <thead>
+        <tr>
+            <th>Name</th>
+            <th>Version</th>
+            <th>Type</th>
+            <th>Language</th>
+            <th>Licenses</th>
+            <th>Location</th>
+            <th>PURL</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{- range .artifacts }}
+        <tr>
+            <td>{{ .name }}</td>
+            <td>{{ .version }}</td>
+            <td>{{ .type }}</td>
+            <td>{{ .language }}</td>
+            <td>
+                {{- range .licenses }}
+                    {{ .spdxExpression }}<br>
+                {{- end }}
+            </td>
+            <td>
+                {{- range .locations }}
+                    {{ .path }}<br>
+                {{- end }}
+            </td>
+            <td>{{ .purl }}</td>
+        </tr>
+        {{- end }}
+        </tbody>
+    </table>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        $('#sbomTable').DataTable({
+            responsive: true,
+            dom: 'Bfrtip',
+            buttons: ['copy', 'excel', 'pdf']
+        });
+    });
+</script>
+</body>
+</html>
