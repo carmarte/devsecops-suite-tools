@@ -18,10 +18,12 @@ if [ $# -lt 1 ]; then
 fi
 
 TOOL_NAME=$1
-TEMPLATE_DIR="/home/devsecops/templates"
-IMAGE_NAME="${IMAGE_NAME:-/home/devsecops/images/ubuntu:latest}"
-SRC_DIR="${SRC_DIR:-/home/devsecops/src}"
-REPORTS_DIR="${REPORTS_DIR:-/home/devsecops/reports}"
+HOME_DIR="/home/devsecops"
+TEMPLATE_DIR="$HOME_DIR/templates"
+IMAGE_NAME="${IMAGE_NAME:-$HOME_DIR/images/ubuntu:latest}"
+SRC_DIR="${SRC_DIR:-$HOME_DIR/src}"
+REPORTS_DIR="${REPORTS_DIR:-$HOME_DIR/reports}"
+DATE=$(date +"%Y-%m-%d %H:%M:%S")
 
 if [ ! -d "$REPORTS_DIR" ]; then
   mkdir -p "$REPORTS_DIR"
@@ -127,23 +129,42 @@ run_gitleaks() {
     fi
     if [ $? -ne 0 ]; then
         echo -e "\n❌ Gitleaks scan failed. Please check the path name and try again."
+        exit 0
     else
         echo -e "\n✅ Gitleaks scan completed. Report saved to $REPORTS_DIR/gitleaks_report.{html,sarif}"
+        exit 0
     fi
 }
 
 # Function to run Semgrep
 run_semgrep() {
     echo -e "\n🔍 Running Semgrep scan..."
+    echo '{ "date": "'"$DATE"'" }' > context.json
 
-    semgrep --config=auto "${SRC_DIR}" \
-      -v \
-      --json --json-output="$REPORTS_DIR/semgrep_report.json"
-    
+    semgrep scan \
+      --config "$HOME_DIR/semgrep-rules" \
+      --no-git-ignore \
+      --metrics=off \
+      --json-output="$REPORTS_DIR/semgrep_report.json" \
+      --sarif-output="$REPORTS_DIR/semgrep_report.sarif" \
+      "$SRC_DIR"
+
     if [ $? -ne 0 ]; then
         echo -e "\n❌ Semgrep scan failed. Please check the path name and try again."
     else
         echo -e "\n✅ Semgrep scan completed. Report saved to $REPORTS_DIR/semgrep_report.json"
+    fi
+    gomplate \
+        -d data="$REPORTS_DIR/semgrep_report.json" \
+        --context context.json \
+        -f "$TEMPLATE_DIR/semgrep-html.tmpl" \
+        > "$REPORTS_DIR/semgrep_report.html" \
+        -V
+    
+    if [ $? -ne 0 ]; then
+        echo -e "\n❌ Gomplate template failed. Please check the paths and try again."
+    else
+        echo -e "\n✅ Gomplate HTML template completed. Report saved to $REPORTS_DIR/semgrep_report.html"
     fi
 }
 
