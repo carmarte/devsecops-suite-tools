@@ -20,19 +20,21 @@ ENV DEBIAN_FRONTEND=noninteractive \
     TRIVY_IGNORE_UNFIXED=true \
     TRIVY_NO_PROGRESS=true \
     TRIVY_TIMEOUT=5s \
-    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
+    GOMPLATE_VERSION=v4.3.2
 
 # Install dependencies & packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl wget \
     git \
     jq \
+    golang \
     python3 \
     python3-pip \
     python3-setuptools \
     python3-wheel \
     tar unzip \
-    gnupg \
+    gnupg nano \
     ca-certificates \
     && update-ca-certificates \
     && apt-get clean \
@@ -44,6 +46,10 @@ RUN useradd -m -s /bin/bash devsecops \
     && usermod -aG sudo devsecops
 WORKDIR /home/devsecops
 COPY . /home/devsecops/
+
+# Install gomplate
+RUN wget -O /usr/local/bin/gomplate https://github.com/hairyhenderson/gomplate/releases/download/${GOMPLATE_VERSION}/gomplate_linux-amd64 \
+    && chmod +x /usr/local/bin/gomplate
 
 # Install Trivy (SCA / Vulnerability Scanner)
 RUN curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
@@ -57,7 +63,7 @@ RUN curl -sfL https://github.com/gitleaks/gitleaks/releases/download/v8.27.2/git
     && chmod +x /usr/local/bin/gitleaks
 
 # Install Semgrep (Code Analysis) 
-RUN pip install --no-cache-dir semgrep --break-system-packages
+RUN pip install --no-cache-dir semgrep jinja2 --break-system-packages
 
 RUN mkdir -p /home/devsecops/.cache/trivy \
     && chown -R devsecops:devsecops /home/devsecops
