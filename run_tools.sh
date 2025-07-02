@@ -154,7 +154,6 @@ run_semgrep() {
     else
         echo -e "\n✅ Semgrep scan completed. Report saved to $REPORTS_DIR/semgrep_report.json"
     fi
-
     gomplate \
         -d data="$REPORTS_DIR/semgrep_report.json" \
         --context context.json \
